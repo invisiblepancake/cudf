@@ -18,29 +18,44 @@ import pandas as pd
 from cudf.core._compat import PANDAS_CURRENT_SUPPORTED_VERSION, PANDAS_VERSION
 
 
+@pytest.fixture
+def profiler1():
+    with Profiler() as p:
+        yield p
+
+
+@pytest.fixture
+def profiler2():
+    with Profiler() as p:
+        yield p
+
+
 # Codecov and Profiler interfere with each-other,
 # hence we don't want to run code-cov on this test.
 @pytest.mark.no_cover
-def test_profiler_basic():
+def test_profiler_gpu_only(profiler1):
     pytest.importorskip("cudf")
-
     # test that the profiler correctly reports
     # when we use the GPU v/s CPU
-    with Profiler() as p:
-        df = pd.DataFrame({"a": [1, 2, 3], "b": "b"})
-        df.groupby("a").max()
+    df = pd.DataFrame({"a": [1, 2, 3], "b": "b"})
+    df.groupby("a").max()
 
-    assert len(p.per_line_stats) == 2
-    for line_no, line, gpu_time, cpu_time in p.per_line_stats:
+    assert len(profiler1.per_line_stats) == 2
+    for line_no, line, gpu_time, cpu_time in profiler1.per_line_stats:
         assert gpu_time
         assert not cpu_time
 
-    with Profiler() as p:
-        s = pd.Series([1, "a"])
-        s = s + s
 
-    assert len(p.per_line_stats) == 2
-    for line_no, line, gpu_time, cpu_time in p.per_line_stats:
+@pytest.mark.no_cover
+def test_profiler_gpu_and_cpu(profiler2):
+    pytest.importorskip("cudf")
+    # test that the profiler correctly reports
+    # when we use the GPU v/s CPU
+    s = pd.Series([1, "a"])
+    s = s + s
+
+    assert len(profiler2.per_line_stats) == 2
+    for line_no, line, gpu_time, cpu_time in profiler2.per_line_stats:
         assert cpu_time
 
 
@@ -130,6 +145,7 @@ def test_profiler_commandline():
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     assert sp_completed.returncode == 0
     output = sp_completed.stdout
