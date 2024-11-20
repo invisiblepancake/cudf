@@ -19,15 +19,13 @@
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
-#include <cudf_test/table_utilities.hpp>
+#include <cudf_test/iterator_utilities.hpp>
 
 #include <cudf/strings/findall.hpp>
 #include <cudf/strings/regex/regex_program.hpp>
 #include <cudf/strings/strings_column_view.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
-
-#include <vector>
 
 struct StringsFindallTests : public cudf::test::BaseFixture {};
 
@@ -149,6 +147,22 @@ TEST_F(StringsFindallTests, LargeRegex)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(results->view(), expected);
 }
 
+TEST_F(StringsFindallTests, FindTest)
+{
+  auto const valids = cudf::test::iterators::null_at(5);
+  cudf::test::strings_column_wrapper input(
+    {"3A", "May4", "Jan2021", "March", "A9BC", "", "", "abcdef ghijklm 12345"}, valids);
+  auto sv = cudf::strings_column_view(input);
+
+  auto pattern = std::string("\\d+");
+
+  auto prog    = cudf::strings::regex_program::create(pattern);
+  auto results = cudf::strings::find_re(sv, *prog);
+  auto expected =
+    cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3, 3, -1, 1, 0, -1, 15}, valids);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(results->view(), expected);
+}
+
 TEST_F(StringsFindallTests, NoMatches)
 {
   cudf::test::strings_column_wrapper input({"abc\nfff\nabc", "fff\nabc\nlll", "abc", "", "abc\n"});
@@ -169,10 +183,16 @@ TEST_F(StringsFindallTests, EmptyTest)
   auto prog = cudf::strings::regex_program::create(pattern);
 
   cudf::test::strings_column_wrapper input;
-  auto sv      = cudf::strings_column_view(input);
-  auto results = cudf::strings::findall(sv, *prog);
-
-  using LCW = cudf::test::lists_column_wrapper<cudf::string_view>;
-  LCW expected;
-  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(results->view(), expected);
+  auto sv = cudf::strings_column_view(input);
+  {
+    auto results = cudf::strings::findall(sv, *prog);
+    using LCW    = cudf::test::lists_column_wrapper<cudf::string_view>;
+    LCW expected;
+    CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(results->view(), expected);
+  }
+  {
+    auto results  = cudf::strings::find_re(sv, *prog);
+    auto expected = cudf::test::fixed_width_column_wrapper<cudf::size_type>{};
+    CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(results->view(), expected);
+  }
 }
