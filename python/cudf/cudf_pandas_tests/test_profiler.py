@@ -18,6 +18,32 @@ import pandas as pd
 from cudf.core._compat import PANDAS_CURRENT_SUPPORTED_VERSION, PANDAS_VERSION
 
 
+# Codecov and Profiler interfere with each-other,
+# hence we don't want to run code-cov on this test.
+@pytest.mark.no_cover
+def test_profiler_basic():
+    pytest.importorskip("cudf")
+
+    # test that the profiler correctly reports
+    # when we use the GPU v/s CPU
+    with Profiler() as p:
+        df = pd.DataFrame({"a": [1, 2, 3], "b": "b"})
+        df.groupby("a").max()
+
+    assert len(p.per_line_stats) == 2
+    for line_no, line, gpu_time, cpu_time in p.per_line_stats:
+        assert gpu_time
+        assert not cpu_time
+
+    with Profiler() as p:
+        s = pd.Series([1, "a"])
+        s = s + s
+
+    assert len(p.per_line_stats) == 2
+    for line_no, line, gpu_time, cpu_time in p.per_line_stats:
+        assert cpu_time
+
+
 @pytest.mark.skipif(
     PANDAS_VERSION < PANDAS_CURRENT_SUPPORTED_VERSION,
     reason="function names change across versions of pandas, so making sure it only runs on latest version of pandas",
