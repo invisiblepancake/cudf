@@ -20,12 +20,6 @@ function(find_and_configure_nanoarrow)
     set(_exclude_from_all EXCLUDE_FROM_ALL TRUE)
   endif()
 
-  if(NOT CUDF_NANOARROW_DEBUG)
-    set(_nanoarrow_debug OFF)
-  else()
-    set(_nanoarrow_debug ON)
-  endif()
-
   # Currently we need to always build nanoarrow so we don't pickup a previous installed version
   set(CPM_DOWNLOAD_nanoarrow ON)
   rapids_cpm_find(
@@ -35,10 +29,13 @@ function(find_and_configure_nanoarrow)
     GIT_REPOSITORY https://github.com/apache/arrow-nanoarrow.git
     GIT_TAG e54b7df525fa1d310a96687bd99902823402b26c
     GIT_SHALLOW FALSE
-    OPTIONS "BUILD_SHARED_LIBS OFF" "NANOARROW_NAMESPACE cudf"
-            "NANOARROW_DEBUG ${_nanoarrow_debug}" ${_exclude_from_all}
+    OPTIONS "BUILD_SHARED_LIBS OFF" "NANOARROW_NAMESPACE cudf" ${_exclude_from_all}
   )
   set_target_properties(nanoarrow PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  if(CUDF_NANOARROW_DEBUG)
+    target_compile_definitions(nanoarrow PRIVATE NANOARROW_DEBUG=1)
+  endif()
+
   rapids_export_find_package_root(BUILD nanoarrow "${nanoarrow_BINARY_DIR}" EXPORT_SET cudf-exports)
 endfunction()
 

@@ -292,6 +292,7 @@ ConfigureTest(
   ${ARROW_LIBRARIES}
 )
 enable_static_checkers(INTEROP_TEST CLANG_TIDY)
+target_compile_definitions(INTEROP_TEST PRIVATE NANOARROW_DEBUG=1)
 
 # ##################################################################################################
 # * io tests --------------------------------------------------------------------------------------
