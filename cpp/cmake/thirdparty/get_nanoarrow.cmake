@@ -16,8 +16,8 @@
 function(find_and_configure_nanoarrow)
   include(${rapids-cmake-dir}/cpm/package_override.cmake)
 
-  #set(cudf_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
-  #rapids_cpm_package_override("${cudf_patch_dir}/nanoarrow_override.json")
+  # set(cudf_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
+  # rapids_cpm_package_override("${cudf_patch_dir}/nanoarrow_override.json")
 
   if(NOT BUILD_SHARED_LIBS)
     set(_exclude_from_all EXCLUDE_FROM_ALL FALSE)
@@ -37,7 +37,8 @@ function(find_and_configure_nanoarrow)
     nanoarrow 0.7.0.dev
     GLOBAL_TARGETS nanoarrow
     CPM_ARGS
-    OPTIONS "BUILD_SHARED_LIBS OFF" "NANOARROW_NAMESPACE cudf" "NANOARROW_DEBUG ${_nanarrow_debug}" ${_exclude_from_all}
+    OPTIONS "BUILD_SHARED_LIBS OFF" "NANOARROW_NAMESPACE cudf" "NANOARROW_DEBUG ${_nanarrow_debug}"
+            ${_exclude_from_all}
   )
   set_target_properties(nanoarrow PROPERTIES POSITION_INDEPENDENT_CODE ON)
   rapids_export_find_package_root(BUILD nanoarrow "${nanoarrow_BINARY_DIR}" EXPORT_SET cudf-exports)
