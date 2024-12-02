@@ -36,6 +36,9 @@ function(find_and_configure_nanoarrow)
   rapids_cpm_find(
     nanoarrow 0.7.0.dev
     GLOBAL_TARGETS nanoarrow
+    GIT_REPOSITORY https://github.com/apache/arrow-nanoarrow.git
+    GIT_TAG e54b7df525fa1d310a96687bd99902823402b26c
+    GIT_SHALLOW FALSE
     CPM_ARGS
     OPTIONS "BUILD_SHARED_LIBS OFF" "NANOARROW_NAMESPACE cudf" "NANOARROW_DEBUG ${_nanarrow_debug}"
             ${_exclude_from_all}
