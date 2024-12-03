@@ -33,7 +33,7 @@ function(find_and_configure_nanoarrow)
   )
   set_target_properties(nanoarrow PROPERTIES POSITION_INDEPENDENT_CODE ON)
   if(CUDF_NANOARROW_DEBUG)
-    target_compile_definitions(nanoarrow PRIVATE NANOARROW_DEBUG=1)
+    target_compile_definitions(nanoarrow PUBLIC NANOARROW_DEBUG=1)
   endif()
 
   rapids_export_find_package_root(BUILD nanoarrow "${nanoarrow_BINARY_DIR}" EXPORT_SET cudf-exports)
