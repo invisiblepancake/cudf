@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@
 #include <cudf/utilities/error.hpp>
 #include <cudf/utilities/traits.hpp>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 #include <type_traits>
 
 namespace cudf {
@@ -42,7 +45,7 @@ template <typename LHS,
           std::enable_if_t<cudf::is_relationally_comparable<LHS, RHS>()>* = nullptr>
 CUDF_HOST_DEVICE inline auto min(LHS const& lhs, RHS const& rhs)
 {
-  return std::min(lhs, rhs);
+  return cuda::std::min(lhs, rhs);
 }
 
 /**
@@ -53,7 +56,7 @@ template <typename LHS,
           std::enable_if_t<cudf::is_relationally_comparable<LHS, RHS>()>* = nullptr>
 CUDF_HOST_DEVICE inline auto max(LHS const& lhs, RHS const& rhs)
 {
-  return std::max(lhs, rhs);
+  return cuda::std::max(lhs, rhs);
 }
 }  // namespace detail
 
@@ -68,20 +71,20 @@ struct DeviceSum {
   }
 
   template <typename T, std::enable_if_t<cudf::is_timestamp<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return T{typename T::duration{0}};
   }
 
   template <typename T,
             std::enable_if_t<!cudf::is_timestamp<T>() && !cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return T{0};
   }
 
   template <typename T, std::enable_if_t<cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     CUDF_FAIL("fixed_point does not yet support device operator identity");
     return T{};
@@ -105,7 +108,7 @@ struct DeviceCount {
   }
 
   template <typename T>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return T{};
   }
@@ -125,7 +128,7 @@ struct DeviceMin {
   template <typename T,
             std::enable_if_t<!std::is_same_v<T, cudf::string_view> && !cudf::is_dictionary<T>() &&
                              !cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     // chrono types do not have std::numeric_limits specializations and should use T::max()
     // https://eel.is/c++draft/numeric.limits.general#6
@@ -139,7 +142,7 @@ struct DeviceMin {
   }
 
   template <typename T, std::enable_if_t<cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     CUDF_FAIL("fixed_point does not yet support DeviceMin identity");
     return cuda::std::numeric_limits<T>::max();
@@ -153,7 +156,7 @@ struct DeviceMin {
   }
 
   template <typename T, std::enable_if_t<cudf::is_dictionary<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return static_cast<T>(T::max_value());
   }
@@ -173,7 +176,7 @@ struct DeviceMax {
   template <typename T,
             std::enable_if_t<!std::is_same_v<T, cudf::string_view> && !cudf::is_dictionary<T>() &&
                              !cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     // chrono types do not have std::numeric_limits specializations and should use T::min()
     // https://eel.is/c++draft/numeric.limits.general#6
@@ -187,7 +190,7 @@ struct DeviceMax {
   }
 
   template <typename T, std::enable_if_t<cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     CUDF_FAIL("fixed_point does not yet support DeviceMax identity");
     return cuda::std::numeric_limits<T>::lowest();
@@ -200,7 +203,7 @@ struct DeviceMax {
   }
 
   template <typename T, std::enable_if_t<cudf::is_dictionary<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return static_cast<T>(T::lowest_value());
   }
@@ -217,13 +220,13 @@ struct DeviceProduct {
   }
 
   template <typename T, std::enable_if_t<!cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     return T{1};
   }
 
   template <typename T, std::enable_if_t<cudf::is_fixed_point<T>()>* = nullptr>
-  static constexpr T identity()
+  CUDF_HOST_DEVICE static constexpr T identity()
   {
     CUDF_FAIL("fixed_point does not yet support DeviceProduct identity");
     return T{1, numeric::scale_type{0}};
